@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: pytest -v
+      - run: ruff check .
+      - run: ruff format --check .
+      - name: Smoke test with an empty profile
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
+          XDG_STATE_HOME: ${{ runner.temp }}/state
+        run: |
+          claude-rc-keep --version
+          claude-rc-keep tick
+          claude-rc-keep ls

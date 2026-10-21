@@ -1,0 +1,11 @@
+[Unit]
+Description=tmux server for sessions kept by claude-rc-keep
+
+[Service]
+Type=forking
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=%h
+ExecStart=/usr/bin/tmux -L claude-rc-keep new-session -d -s keep -n shell
+ExecStop=/usr/bin/tmux -L claude-rc-keep kill-server
+Restart=on-failure
+RestartSec=10

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "claude-rc-keep"
+version = "0.1.0"
+description = "Keep Claude Code Remote Control sessions online across restarts and reboots."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Jonathan Wrede" }]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+claude-rc-keep = "claude_rc_keep.cli:main"
+
+[tool.ruff]
+line-length = 120

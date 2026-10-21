@@ -1,0 +1,12 @@
+[Unit]
+Description=Keep Claude Code Remote Control sessions online (claude-rc-keep tick)
+After=network-online.target claude-rc-keep-tmux.service
+Wants=network-online.target
+Requires=claude-rc-keep-tmux.service
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+# Extra arguments for every restarted session, for example:
+# Environment="CLAUDE_RC_KEEP_ARGS=--append-system-prompt-file %h/.claude/my-rules.md"
+ExecStart=%h/.local/bin/claude-rc-keep tick
