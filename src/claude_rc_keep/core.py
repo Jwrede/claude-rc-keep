@@ -112,6 +112,17 @@ def command(uuid: str, entry: dict, claude: str, extra: list[str]) -> list[str]:
 
 def tmux_start(name: str, cwd: str, argv: list[str]) -> None:
     tmux = ["tmux", "-L", TMUX_SOCKET]
+    # A previous start may still be running without a session file (e.g. stuck in a dialog); replace it.
+    windows = subprocess.run(
+        [*tmux, "list-windows", "-t", TMUX_SESSION, "-F", "#{window_id} #{window_name}"],
+        check=False,
+        capture_output=True,
+        text=True,
+    ).stdout
+    for line in windows.splitlines():
+        wid, _, wname = line.partition(" ")
+        if wname == name:
+            subprocess.run([*tmux, "kill-window", "-t", wid], check=False, capture_output=True)
     has = subprocess.run([*tmux, "has-session", "-t", TMUX_SESSION], check=False, capture_output=True).returncode == 0
     target = ["new-window", "-d", "-t", f"{TMUX_SESSION}:"] if has else ["new-session", "-d", "-s", TMUX_SESSION]
     subprocess.run([*tmux, *target, "-n", name, "-c", cwd, shlex.join(argv)], check=True)

@@ -1,10 +1,12 @@
 import json
 import os
+import shutil
 import subprocess
 import sys
 
 import pytest
 
+from claude_rc_keep import core
 from claude_rc_keep.cli import main
 from claude_rc_keep.core import START_GRACE, Paths, command, load, running, snapshot, tick, web_url
 
@@ -99,6 +101,26 @@ def test_tick_skips_empty_transcripts_and_missing_folders(paths):
         f.unlink()
     assert tick(paths, now=2000, launch=lambda *a: pytest.fail("should not start")) == []
     assert set(load(paths)) == {"empty-1", "gone-1"}
+
+
+@pytest.mark.skipif(not shutil.which("tmux"), reason="needs tmux")
+def test_tmux_start_replaces_window_of_same_name(tmp_path, monkeypatch):
+    # A restarted session that is still running (e.g. stuck in a dialog) must not pile up.
+    monkeypatch.setattr(core, "TMUX_SOCKET", f"rc-keep-test-{os.getpid()}")
+    tmux = ["tmux", "-L", core.TMUX_SOCKET]
+    try:
+        core.tmux_start("other", str(tmp_path), ["sleep", "300"])
+        core.tmux_start("abcd1234", str(tmp_path), ["sleep", "300"])
+        core.tmux_start("abcd1234", str(tmp_path), ["sleep", "301"])
+        out = subprocess.run(
+            [*tmux, "list-windows", "-t", core.TMUX_SESSION, "-F", "#{window_name} #{pane_start_command}"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+        assert sorted(out) == ['abcd1234 "sleep 301"', 'other "sleep 300"']
+    finally:
+        subprocess.run([*tmux, "kill-server"], check=False, capture_output=True)
 
 
 def test_rm_stops_and_forgets(paths, capsys):
